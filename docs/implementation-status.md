@@ -187,6 +187,12 @@ idf.py -B /tmp/codexpad-codex-pinned ... build
   the corrected action layout, tap-on-release behavior, 1,000-exchange
   transport regression, settings persistence, and one-boot stock escape were
   proven on 0.2.3;
+- rotating the lower encoder to select an agent that is already working can
+  visibly transition from breath to solid and back to breath. The firmware
+  selection path does not set a solid effect: it updates the selected-slot
+  overlay and emits an `AG00`-`AG05` tap. A live RPC capture is still required
+  to distinguish a transient host lighting update from a firmware render
+  transition before choosing the fix;
 - the 0.2.4 OLED polling fix still needs explicit visual confirmation;
 - inactivity, full stock peripherals, and released-image restore remain;
 - lighting implements off, solid, snake, rainbow, breath, gradient, and shallow

@@ -1,0 +1,29 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install native test dependency
+        run: sudo apt-get update && sudo apt-get install -y libcjson-dev
+
+      - name: Run Python protocol tests
+        run: python -m unittest discover -s tools/codex_protocol_probe -p 'test_*.py' -v
+
+      - name: Run strict native tests
+        run: ./tools/codex_protocol_probe/run_native_tests.sh

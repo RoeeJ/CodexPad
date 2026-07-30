@@ -1,4 +1,25 @@
-# duckyPad Pro: Advanced Macro Scripting Beyond QMK/VIA
+# CodexPad: a duckyPad Pro Codex controller
+
+This repository carries an experimental, reversible adaptation of
+[duckyPad Pro](https://github.com/dekuNukem/duckyPad-Pro) into a wired
+controller for Codex in the ChatGPT desktop app. The current hardware-tested
+checkpoint is firmware **0.2.4**.
+
+- [Install the Codex firmware](docs/install.md)
+- [Controls and physical layout](docs/controls.md)
+- [Implementation and hardware-validation status](docs/implementation-status.md)
+- [Observed protocol and compatibility boundaries](docs/codex-protocol.md)
+- [Restore stock firmware](docs/recovery.md)
+- [Implementation plan](docs/implementation-plan.md) and
+  [long-horizon Codex goal](docs/codex-goal.md)
+
+The Codex controller mode is independent experimental work. It is not an
+official Work Louder or OpenAI product. Keep the stock recovery image and read
+the installation/recovery notes before flashing.
+
+---
+
+## Upstream duckyPad Pro
 
 [Get duckyPad Pro](https://www.tindie.com/products/37399/) | [Official Discord](https://discord.gg/4sJCBx5) | [Getting Started](./doc/getting_started.md) | [Table of Contents](#table-of-contents)
 
