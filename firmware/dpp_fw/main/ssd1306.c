@@ -546,6 +546,12 @@ void ssd1306_SetContrast(const uint8_t value)
     // printf("OLED SC: %d\n", value);
 }
 
+void ssd1306_SetDisplayOn(uint8_t enabled)
+{
+    ssd1306_write_cmd_byte(enabled ? OLED_CMD_DISPLAY_ON :
+                                     OLED_CMD_DISPLAY_OFF);
+}
+
 #define SCREENSHOT_NAME_BUF_SIZE 32
 
 void ssd1306_take_screenshot(void)

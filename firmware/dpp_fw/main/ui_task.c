@@ -743,7 +743,7 @@ uint8_t last_led_state = 255;
 void draw_kbled_icon(uint8_t force_redraw, uint8_t refresh_screen)
 {
   uint8_t this_state = kb_led_status;
-  if(is_usb_hid_connected)
+  if(is_usb_hid_connected())
     this_state |= 0x80;
   else
     this_state &= 0x7f;

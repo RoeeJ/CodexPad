@@ -22,6 +22,10 @@
 #include "keyboard.h"
 #include "ds_vm.h"
 #include "hid_task.h"
+#ifdef CONFIG_DPP_CODEX_MICRO_COMPAT
+#include "codex_mode.h"
+#include "codex_wire.h"
+#endif
 
 #include "tusb_msc_storage.h"
 #include "diskio_impl.h"
@@ -37,7 +41,6 @@ static const char *TAG = "USBHID";
 
 volatile uint8_t is_rtc_valid;
 volatile uint8_t needs_gv_save;
-volatile uint8_t is_usb_hid_connected;
 
 #define TUSB_DESC_TOTAL_LEN      (TUD_CONFIG_DESC_LEN + CFG_TUD_HID * TUD_HID_DESC_LEN)
 #define CUSTOM_HID_EPIN_SIZE 63
@@ -176,16 +179,41 @@ const uint8_t hid_report_descriptor[] =
   0x95, USBD_CUSTOMHID_OUTREPORT_BUF_SIZE, // Report Count (Byte length)
   0x09, 0x3A,                    //   Usage (Counted Buffer)
   0x91, 0x82,                    //   Output (Data, Var, Abs, Volatile)
+  0xC0,                          // End Collection
+
+#ifdef CONFIG_DPP_CODEX_MICRO_COMPAT
+  // --- Report ID 6: Codex vendor JSON-RPC transport ---
+  0x06, 0x00, 0xFF,              // Usage Page (Vendor Defined 0xFF00)
+  0x09, 0x01,                    // Usage (1)
+  0xA1, 0x01,                    // Collection (Application)
+  0x15, 0x00,                    //   Logical Minimum (0)
+  0x26, 0xFF, 0x00,              //   Logical Maximum (255)
+  0x85, 0x06,                    //   Report ID (6)
+  0x75, 0x08,                    //   Report Size (8)
+  0x95, 0x3F,                    //   Report Count (63)
+  0x09, 0x01,                    //   Usage (1)
+  0x81, 0x02,                    //   Input (Data, Var, Abs)
+  0x85, 0x06,                    //   Report ID (6)
+  0x75, 0x08,                    //   Report Size (8)
+  0x95, 0x3F,                    //   Report Count (63)
+  0x09, 0x01,                    //   Usage (1)
+  0x91, 0x02,                    //   Output (Data, Var, Abs)
   0xC0                           // End Collection
+#endif
 };
 
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance)
 {
-    is_usb_hid_connected = 1;
     return hid_report_descriptor;
 }
 
-void tud_umount_cb(void) { is_usb_hid_connected = 0; }
+/*
+ * esp_tinyusb owns tud_mount_cb/tud_umount_cb when USB mass storage is
+ * enabled. Query TinyUSB's authoritative device state instead of defining a
+ * second application callback (which causes a duplicate-symbol link failure
+ * with current esp_tinyusb releases).
+ */
+uint8_t is_usb_hid_connected(void) { return tud_mounted() ? 1 : 0; }
 
 uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen)
 {
@@ -204,6 +232,10 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
       kb_led_status = buffer[0];
     else if(report_id == 5)
       handle_hid_command(buffer, bufsize);
+#ifdef CONFIG_DPP_CODEX_MICRO_COMPAT
+    else if(report_id == CODEX_HID_REPORT_ID)
+      codex_mode_receive_hid(buffer, bufsize);
+#endif
 }
 
 uint8_t shared_hid_buf[DP_HID_MSG_SIZE];
@@ -229,7 +261,7 @@ void USBD_CUSTOM_HID_SendReport(uint8_t* usb_hid_buf)
     uint8_t usage_id = usb_hid_buf[0];
     format_hid_report(usb_hid_buf, usage_id);
 
-    if (is_usb_hid_connected)
+    if (is_usb_hid_connected())
     {
         tud_hid_report(usage_id, shared_hid_buf, DP_HID_MSG_SIZE);
     } 
@@ -248,6 +280,15 @@ void USBD_CUSTOM_HID_SendReport(uint8_t* usb_hid_buf)
 
 #define USB_PID   (0xd11c+1)
 #define USB_VID   0x0483
+#ifdef CONFIG_DPP_CODEX_MICRO_COMPAT
+/*
+ * Development-only compatibility identity. Do not distribute under another
+ * vendor's VID allocation; use a project VID plus a host discovery patch for
+ * released builds.
+ */
+#define CODEX_USB_PID 0x8297
+#define CODEX_USB_VID 0x303A
+#endif
 #define USB_BCD   0x0200
 
 static tusb_desc_device_t msc_desc_device =
@@ -349,13 +390,29 @@ char* hid_string_descriptor[] = {
     "duckyPad Pro HID",     // 4
 };
 
+#define STOCK_HID_REPORT_DESCRIPTOR_SIZE 205
 static const uint8_t hid_only_config_desc[] = {
     // Configuration number, interface count, string index, total length, attribute, power in mA
     TUD_CONFIG_DESCRIPTOR(1, 1, 0, TUSB_DESC_TOTAL_LEN, 0x00, 100),
 
     // Interface number, string index, boot protocol, report descriptor len, EP In address, size & polling interval
-    TUD_HID_DESCRIPTOR(0, 4, false, sizeof(hid_report_descriptor), 0x81, 16, 1),
+    TUD_HID_DESCRIPTOR(0, 4, false,
+#ifdef CONFIG_DPP_CODEX_MICRO_COMPAT
+                       STOCK_HID_REPORT_DESCRIPTOR_SIZE,
+#else
+                       sizeof(hid_report_descriptor),
+#endif
+                       0x81, 16,
+                       1),
 };
+
+#ifdef CONFIG_DPP_CODEX_MICRO_COMPAT
+static const uint8_t codex_hid_only_config_desc[] = {
+    TUD_CONFIG_DESCRIPTOR(1, 1, 0, TUSB_DESC_TOTAL_LEN, 0x00, 100),
+    TUD_HID_DESCRIPTOR(0, 4, false, sizeof(hid_report_descriptor),
+                       0x81, 64, 1),
+};
+#endif
 
 static tusb_desc_device_t hid_only_desc_device =
 {
@@ -383,13 +440,32 @@ static tusb_desc_device_t hid_only_desc_device =
 
 void mount_hid_only(void)
 {
+#ifdef CONFIG_DPP_CODEX_MICRO_COMPAT
+    if (codex_mode_is_active()) {
+        hid_only_desc_device.idVendor = CODEX_USB_VID;
+        hid_only_desc_device.idProduct = CODEX_USB_PID;
+        hid_string_descriptor[1] = "CodexPad clean-room project";
+        hid_string_descriptor[2] = "duckyPad Pro Codex Controller";
+        hid_string_descriptor[4] = "Codex vendor HID";
+    } else {
+        hid_only_desc_device.idVendor = USB_VID;
+        hid_only_desc_device.idProduct = USB_PID;
+        hid_string_descriptor[1] = "dekuNukem";
+        hid_string_descriptor[2] = "duckyPad Pro";
+        hid_string_descriptor[4] = "duckyPad Pro HID";
+    }
+#endif
     sprintf(hid_string_descriptor[3], "DP24_%02X%02X%02X%02X", esp_mac_addr[ESP_MAC_ADDR_SIZE-4], esp_mac_addr[ESP_MAC_ADDR_SIZE-3], esp_mac_addr[ESP_MAC_ADDR_SIZE-2], esp_mac_addr[ESP_MAC_ADDR_SIZE-1]);
     const tinyusb_config_t tusb_cfg = {
         .device_descriptor = &hid_only_desc_device,
         .string_descriptor = hid_string_descriptor,
         .string_descriptor_count = sizeof(hid_string_descriptor) / sizeof(hid_string_descriptor[0]),
         .external_phy = false,
-        .configuration_descriptor = hid_only_config_desc,
+        .configuration_descriptor =
+#ifdef CONFIG_DPP_CODEX_MICRO_COMPAT
+            codex_mode_is_active() ? codex_hid_only_config_desc :
+#endif
+            hid_only_config_desc,
     };
     ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
     ESP_LOGI(TAG, "USB HID only initialization DONE");
@@ -740,7 +816,7 @@ uint8_t wait_for_hid_connect(uint32_t how_long_ms)
     {
         if(millis() - start_ts > how_long_ms)
             return 0;
-        if(is_usb_hid_connected)
+        if(is_usb_hid_connected())
             return 1;
         delay_ms(50);
     }

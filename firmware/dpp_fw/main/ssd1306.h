@@ -63,6 +63,7 @@ void ssd1306_GetCursor(uint8_t *x, uint8_t *y);
  * @note RESET = 7Fh.
  */
 void ssd1306_SetContrast(const uint8_t value);
+void ssd1306_SetDisplayOn(uint8_t enabled);
 
 // Control byte
 #define OLED_CONTROL_BYTE_CMD_SINGLE    0x80

@@ -21,6 +21,10 @@
 #include "esp_vfs_fat.h"
 #include "ds_vm.h"
 #include "mypwm.h"
+#ifdef CONFIG_DPP_CODEX_MICRO_COMPAT
+#include "codex_mode.h"
+#include "codex_settings.h"
+#endif
 
 /*
 1.0.0
@@ -218,6 +222,42 @@ void app_main(void)
     neopixel_init();
     expansion_uart_init();
     is_rtc_valid = check_rtc_is_valid();
+
+#ifdef CONFIG_DPP_CODEX_MICRO_COMPAT
+    /*
+     * Recovery escape: holding both side buttons during boot runs the complete
+     * stock application path, including its original USB identity and MSC
+     * updater. This remains available even if Codex transport startup fails.
+     */
+    uint8_t plus_held = poll_sw_state(SW_PLUS, 1);
+    uint8_t minus_held = poll_sw_state(SW_MINUS, 1);
+    codex_settings_t boot_settings;
+    codex_settings_load(&boot_settings);
+    uint8_t run_codex = boot_settings.boot_codex;
+    if (plus_held || minus_held) {
+        delay_ms(800);
+        plus_held = poll_sw_state(SW_PLUS, 1);
+        minus_held = poll_sw_state(SW_MINUS, 1);
+        if (plus_held && !minus_held) {
+            run_codex = 0;
+            boot_settings.boot_codex = 0;
+            (void)codex_settings_save(&boot_settings);
+        } else if (minus_held && !plus_held) {
+            run_codex = 1;
+            boot_settings.boot_codex = 1;
+            (void)codex_settings_save(&boot_settings);
+        } else if (plus_held && minus_held) {
+            run_codex = 0;
+        }
+    }
+    codex_mode_set_active(run_codex);
+    if (run_codex) {
+        oled_init();
+        esp_ota_mark_app_valid_cancel_rollback();
+        codex_mode_run();
+        return;
+    }
+#endif
 
     if(sd_init())
     {

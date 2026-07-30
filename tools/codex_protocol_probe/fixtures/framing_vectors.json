@@ -1,0 +1,22 @@
+{
+  "description": "Independently generated Work Louder-compatible HID framing vectors",
+  "report_id": 6,
+  "channel": 2,
+  "vectors": [
+    {
+      "name": "empty",
+      "payload_hex": "",
+      "report_prefix_hex": "060200"
+    },
+    {
+      "name": "ascii",
+      "payload_hex": "7b226964223a317d0a",
+      "report_prefix_hex": "0602097b226964223a317d0a"
+    },
+    {
+      "name": "max_fragment",
+      "payload_hex": "78787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878",
+      "report_prefix_hex": "06023d78787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878787878"
+    }
+  ]
+}

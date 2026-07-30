@@ -40,13 +40,29 @@ void expansion_uart_init(void)
 }
 
 #define DEFAULT_HALF_STEP_STATE 0  // tracking at half step resolution, suitable for smooth encoder to make it more sensitive
+#ifdef CONFIG_DPP_CODEX_MICRO_COMPAT
+#define SWITCH_EVENT_QUEUE_SIZE 32
+#else
 #define SWITCH_EVENT_QUEUE_SIZE 10
+#endif
 
 rotary_encoder_info_t upper_rc_info;
 rotary_encoder_info_t lower_rc_info;
 QueueHandle_t rotary_encoder_event_queue;
 QueueHandle_t switch_event_queue;
 SemaphoreHandle_t kbscan_mutex;
+static volatile uint32_t dropped_switch_events;
+
+static void queue_switch_event(const switch_event_t *event)
+{
+  if(xQueueSend(switch_event_queue, event, 0) != pdTRUE)
+    ++dropped_switch_events;
+}
+
+uint32_t input_get_dropped_event_count(void)
+{
+  return dropped_switch_events;
+}
 
 void set_re_halfstep(uint8_t is_upper, uint8_t enable_hs)
 {
@@ -175,7 +191,7 @@ void parse_expansion_data(uint8_t exp_data)
       .id = swid + EXP_BUTTON_START,
       .type = SW_EVENT_SHORT_PRESS,
     };
-    xQueueSend(switch_event_queue, &sw_event, NULL);
+    queue_switch_event(&sw_event);
     this_sw_state[sw_event.id] = 1;
   }
   else if(cmd_type == CMD_SW_RELEASED_BITMASK)
@@ -186,7 +202,7 @@ void parse_expansion_data(uint8_t exp_data)
       .id = swid + EXP_BUTTON_START,
       .type = SW_EVENT_RELEASE,
     };
-    xQueueSend(switch_event_queue, &sw_event, NULL);
+    queue_switch_event(&sw_event);
     this_sw_state[sw_event.id] = 0;
   }
   // printf("got data: %x\n", exp_data);
@@ -212,7 +228,7 @@ void kb_scan_task(void *dummy)
           .type = SW_EVENT_SHORT_PRESS,
         };
         last_press_ts[i] = millis();
-        xQueueSend(switch_event_queue, &sw_event, NULL);
+        queue_switch_event(&sw_event);
       }
       else if(this_sw_state[i] == 0 && last_sw_state[i] == 1)
       {
@@ -221,7 +237,7 @@ void kb_scan_task(void *dummy)
           .id = i,
           .type = SW_EVENT_RELEASE,
         };
-        xQueueSend(switch_event_queue, &sw_event, NULL);
+        queue_switch_event(&sw_event);
       }
       else if(this_sw_state[i] == 1 && last_press_ts[i] != MY_UINT32_MAX && millis() - last_press_ts[i] > 500)
       {
@@ -231,7 +247,7 @@ void kb_scan_task(void *dummy)
           .type = SW_EVENT_LONG_PRESS,
         };
         last_press_ts[i] = MY_UINT32_MAX;
-        xQueueSend(switch_event_queue, &sw_event, NULL);
+        queue_switch_event(&sw_event);
       }
     }
     

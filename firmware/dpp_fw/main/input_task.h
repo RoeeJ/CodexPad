@@ -119,11 +119,11 @@ extern QueueHandle_t switch_event_queue;
 #define ROTARY_ENCODER_PERSISTENCE_MS 50
 
 uint32_t get_sw_state_bitfield(void);
+uint32_t input_get_dropped_event_count(void);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-
 

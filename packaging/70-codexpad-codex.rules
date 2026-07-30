@@ -1,0 +1,4 @@
+# duckyPad Pro Codex Controller development identity, USB interface 00 only.
+# This deliberately extends local access to 303a:8297 without impersonating
+# the production Codex Micro PID or opening unrelated HID devices.
+SUBSYSTEM=="hidraw", KERNEL=="hidraw*", IMPORT{builtin}="usb_id", ENV{ID_VENDOR_ID}=="303a", ENV{ID_MODEL_ID}=="8297", ENV{ID_USB_INTERFACE_NUM}=="00", TAG+="uaccess", MODE="0660"

@@ -1,0 +1,134 @@
+{
+  "requests": [
+    {
+      "name": "sys_version",
+      "message": {
+        "method": "sys.version",
+        "params": null,
+        "id": 101
+      }
+    },
+    {
+      "name": "device_status",
+      "message": {
+        "method": "device.status",
+        "params": null,
+        "id": 102
+      }
+    },
+    {
+      "name": "global_lighting",
+      "message": {
+        "method": "v.oai.rgbcfg",
+        "params": {
+          "ambient": {
+            "e": 0,
+            "b": 1.0,
+            "s": 0.0,
+            "m": 0,
+            "c": 16777215
+          },
+          "keys": {
+            "e": 0,
+            "b": 0.5,
+            "s": 0.0,
+            "m": 0,
+            "c": 255
+          }
+        },
+        "id": 103
+      }
+    },
+    {
+      "name": "thread_lighting",
+      "message": {
+        "method": "v.oai.thstatus",
+        "params": [
+          {
+            "id": 0,
+            "c": 16777215,
+            "b": 1.0,
+            "e": 0,
+            "s": 0.0,
+            "sk": 0,
+            "sa": 0
+          },
+          {
+            "id": 1,
+            "c": 255,
+            "b": 0.8,
+            "e": 1,
+            "s": 0.4,
+            "sk": 0,
+            "sa": 0
+          }
+        ],
+        "id": 104
+      }
+    }
+  ],
+  "notifications": [
+    {
+      "name": "agent_0_press",
+      "message": {
+        "method": "v.oai.hid",
+        "params": {
+          "k": "AG00",
+          "act": 1,
+          "ag": 0
+        }
+      }
+    },
+    {
+      "name": "agent_0_release",
+      "message": {
+        "method": "v.oai.hid",
+        "params": {
+          "k": "AG00",
+          "act": 0,
+          "ag": 0
+        }
+      }
+    },
+    {
+      "name": "action_approve_press",
+      "message": {
+        "method": "v.oai.hid",
+        "params": {
+          "k": "ACT07",
+          "act": 1
+        }
+      }
+    },
+    {
+      "name": "encoder_clockwise",
+      "message": {
+        "method": "v.oai.hid",
+        "params": {
+          "k": "ENC_CW",
+          "act": 2
+        }
+      }
+    },
+    {
+      "name": "encoder_press",
+      "message": {
+        "method": "v.oai.hid",
+        "params": {
+          "k": "ENC_TO",
+          "act": 1
+        }
+      }
+    },
+    {
+      "name": "radial_up",
+      "message": {
+        "method": "v.oai.rad",
+        "params": {
+          "a": 0.0,
+          "d": 1.0
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+menu "duckyPad Pro application mode"
+
+config DPP_CODEX_MICRO_COMPAT
+    bool "Build the experimental wired Codex controller mode"
+    default n
+    help
+        Adds the isolated vendor-HID and Codex JSON-RPC implementation.
+        This option is disabled by default so the released duckyPad behavior
+        and USB identity remain unchanged.
+
+config DPP_CODEX_MAX_MESSAGE_SIZE
+    int "Maximum reassembled Codex RPC message size"
+    depends on DPP_CODEX_MICRO_COMPAT
+    range 512 8192
+    default 4096
+    help
+        Maximum bytes accepted for one newline-delimited RPC message.
+
+endmenu
